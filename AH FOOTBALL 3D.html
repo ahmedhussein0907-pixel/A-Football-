@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AH FOOTBALL - إي اتش فوتبول</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Three.js (3D Graphics) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        efootball: {
+                            blue: '#0026e6',
+                            purple: '#4a00e0',
+                            neonGreen: '#00ff66',
+                            neonYellow: '#f0ff00',
+                            darkBg: '#090a10',
+                            cardBg: '#131625'
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #090a10;
+            color: #ffffff;
+        }
+
+        /* Glassmorphic Cards */
+        .glass-panel {
+            background: rgba(19, 22, 37, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* eFootball Card Visuals */
+        .ef-card {
+            background: linear-gradient(135deg, #1f1c2c 0%, #928dab 100%);
+            border: 2px solid #00ff66;
+            box-shadow: 0 8px 25px rgba(0, 255, 102, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .ef-card-epic {
+            background: linear-gradient(135deg, #1e0036 0%, #8e2de2 50%, #f0ff00 100%);
+            border: 2px solid #f0ff00;
+            box-shadow: 0 8px 25px rgba(240, 255, 0, 0.3);
+        }
+
+        /* Custom Touch Controls */
+        .control-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            touch-action: manipulation;
+        }
+
+        .control-btn:active {
+            transform: scale(0.92);
+            background: rgba(0, 255, 102, 0.4);
+            border-color: #00ff66;
+        }
+
+        /* Joystick styles */
+        #joystick-container {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 130px;
+            height: 130px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            touch-action: none;
+            z-index: 50;
+        }
+
+        #joystick-stick {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            margin-top: -25px;
+            margin-left: -25px;
+            background: radial-gradient(circle, #00ff66 0%, #009933 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 15px #00ff66;
+            pointer-events: none;
+        }
+
+        /* Canvas Fullscreen */
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00ff66;
+            border-radius: 4px;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.03); }
+        }
+
+        .animate-glow {
+            animation: pulseGlow 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-efootball-darkBg text-white overflow-hidden select-none">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="relative w-full h-full flex flex-col justify-between">
+
+        <!-- MAIN MENU OVERLAY -->
+        <div id="main-menu" class="absolute inset-0 z-40 flex flex-col justify-between bg-cover bg-center" style="background-image: linear-gradient(to bottom, rgba(9,10,16,0.7), rgba(9,10,16,0.95)), url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1920&q=80');">
+            
+            <!-- TOP BAR -->
+            <div class="w-full p-4 flex justify-between items-center glass-panel border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-green-400 flex items-center justify-center font-black text-xl shadow-lg border border-white/30">
+                        AH
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-black italic tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+                            AH FOOTBALL 2026
+                        </h1>
+                        <span id="user-status-text" class="text-xs text-gray-300" data-i18n="guestUser">جاري تسجيل الدخول...</span>
+                    </div>
+                </div>
+
+                <!-- USER CURRENCY, LANGUAGE SELECTOR & REWARDS -->
+                <div class="flex items-center gap-3 md:gap-4">
+                    <!-- Language Selector Dropdown -->
+                    <div class="relative">
+                        <select id="lang-select" onchange="changeLanguage(this.value)" class="bg-black/60 text-xs text-white border border-green-500/50 rounded-lg px-2 py-1.5 focus:outline-none focus:border-green-400 cursor-pointer">
+                            <option value="ar">🇸🇦 العربية</option>
+                            <option value="en">🇬🇧 English</option>
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="de">🇩🇪 Deutsch</option>
+                            <option value="it">🇮🇹 Italiano</option>
+                            <option value="pt">🇵🇹 Português</option>
+                            <option value="tr">🇹🇷 Türkçe</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center bg-black/50 px-3 py-1.5 rounded-full border border-yellow-500/40">
+                        <i class="fa-solid me-2 text-yellow-400 text-sm">GP</i>
+                        <span id="gp-balance" class="font-bold text-yellow-300">50,000</span>
+                    </div>
+                    <div class="flex items-center bg-black/50 px-3 py-1.5 rounded-full border border-cyan-400/40">
+                        <i class="fa-solid fa-coins me-2 text-cyan-400 text-sm"></i>
+                        <span id="coin-balance" class="font-bold text-cyan-300">250</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTER HERO / MAIN MENU DASHBOARD -->
+            <div class="px-6 my-auto grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
+                
+                <!-- START MATCH CARD -->
+                <div onclick="startGameMatch()" class="cursor-pointer group relative rounded-2xl overflow-hidden p-6 glass-panel border-2 border-green-500/50 hover:border-green-400 transition transform hover:-translate-y-2 shadow-2xl col-span-1 md:col-span-2 flex flex-col justify-end h-64 md:h-80 bg-cover bg-center" style="background-image: linear-gradient(to top, rgba(0,0,0,0.9), transparent), url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1000&q=80');">
+                    <div class="absolute top-4 start-4 bg-green-500 text-black px-3 py-1 rounded-full text-xs font-extrabold tracking-wide uppercase" data-i18n="liveMatch">
+                        المباراة المباشرة
+                    </div>
+                    <div class="z-10">
+                        <h2 class="text-3xl font-black mb-1 text-white group-hover:text-green-400 transition" data-i18n="quickMatchTitle">
+                            مباراة سريعة (سنتياغو برنابيو)
+                        </h2>
+                        <p class="text-sm text-gray-300 mb-4" data-i18n="quickMatchDesc">
+                            التقِ بأفضل الأندية والنجوم في تجربة كروية ثلاثية الأبعاد تعليق حي ومباشر.
+                        </p>
+                        <button class="bg-gradient-to-r from-green-400 to-emerald-600 text-black font-black px-8 py-3 rounded-xl shadow-lg flex items-center gap-2 group-hover:scale-105 transition">
+                            <i class="fa-solid fa-play"></i> <span data-i18n="startMatchBtn">ابدأ المباراة الآن</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SQUAD / MY TEAM CARD -->
+                <div onclick="openSquadModal()" class="cursor-pointer group rounded-2xl p-6 glass-panel border border-white/10 hover:border-blue-500 transition transform hover:-translate-y-2 shadow-xl flex flex-col justify-between h-64 md:h-80">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-blue-400 tracking-wider" data-i18n="teamSquad">تشكيلة الفريق</span>
+                        <i class="fa-solid fa-users text-2xl text-blue-400"></i>
+                    </div>
+                    <div class="text-center py-4">
+                        <div class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+                            98
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1" data-i18n="teamOvr">القوة الإجمالية للفريق</div>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-white mb-2" data-i18n="topPlayers">نجوم الفريق الرئيسي</div>
+                        <div class="flex -space-x-3 space-x-reverse overflow-hidden py-1">
+                            <span class="inline-block h-9 w-9 rounded-full ring-2 ring-green-400 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80')"></span>
+                            <span class="inline-block h-9 w-9 rounded-full ring-2 ring-yellow-400 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80')"></span>
+                            <span class="inline-block h-9 w-9 rounded-full ring-2 ring-blue-400 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80')"></span>
+                        </div>
+                        <button class="w-full mt-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold transition" data-i18n="manageSquad">
+                            إدارة التشكيلة
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- BOTTOM NAVIGATION BAR -->
+            <div class="w-full p-3 glass-panel border-t border-white/10 flex justify-around items-center max-w-4xl mx-auto rounded-t-2xl">
+                <button class="flex flex-col items-center text-green-400">
+                    <i class="fa-solid fa-house text-lg"></i>
+                    <span class="text-[10px] mt-1 font-bold" data-i18n="navHome">الرئيسية</span>
+                </button>
+                <button onclick="openSquadModal()" class="flex flex-col items-center text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-shirt text-lg"></i>
+                    <span class="text-[10px] mt-1 font-bold" data-i18n="navGamePlan">خطة اللعب</span>
+                </button>
+                <button onclick="openStatsModal()" class="flex flex-col items-center text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-trophy text-lg"></i>
+                    <span class="text-[10px] mt-1 font-bold" data-i18n="navStats">الإحصائيات</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3D GAMEPLAY CONTAINER -->
+        <div id="game-container" class="relative w-full h-full hidden">
+            
+            <!-- Three.js Canvas -->
+            <canvas id="game-canvas"></canvas>
+
+            <!-- MATCH LIVE SCOREBUG OVERLAY -->
+            <div class="absolute top-3 left-0 right-0 px-4 flex justify-between items-start pointer-events-none z-30">
+                <!-- Score & Time -->
+                <div class="flex items-center glass-panel rounded-xl overflow-hidden border border-white/20 shadow-2xl pointer-events-auto">
+                    <!-- Home Team -->
+                    <div class="bg-blue-900/80 px-4 py-2 flex items-center gap-2 border-l border-white/10">
+                        <span class="font-black text-sm text-white" data-i18n="teamHome">إي اتش (AH)</span>
+                        <div class="w-4 h-4 bg-blue-500 rounded-full border border-white"></div>
+                    </div>
+                    <!-- Score -->
+                    <div class="px-4 py-1 text-center bg-black/60">
+                        <div class="text-xl font-black text-yellow-400 tracking-widest" id="score-text">0 - 0</div>
+                        <div class="text-[10px] font-bold text-green-400" id="match-time">00:00</div>
+                    </div>
+                    <!-- Away Team -->
+                    <div class="bg-red-900/80 px-4 py-2 flex items-center gap-2 border-r border-white/10">
+                        <div class="w-4 h-4 bg-red-500 rounded-full border border-white"></div>
+                        <span class="font-black text-sm text-white" data-i18n="teamAway">المنافس</span>
+                    </div>
+                </div>
+
+                <!-- Commentary Text Overlay Banner -->
+                <div id="commentary-banner" class="hidden md:flex items-center gap-2 bg-black/70 backdrop-blur border border-green-500/50 px-4 py-2 rounded-xl max-w-sm transition-all duration-300">
+                    <i class="fa-solid fa-microphone text-green-400 animate-pulse"></i>
+                    <span id="commentary-text" class="text-xs font-bold text-green-300" data-i18n="welcomeComm">أهلاً بكم في تغطية المباراة المباشرة!</span>
+                </div>
+
+                <!-- Pause Button -->
+                <button onclick="pauseGame()" class="pointer-events-auto bg-black/60 hover:bg-black border border-white/20 w-10 h-10 rounded-xl flex items-center justify-center text-white">
+                    <i class="fa-solid fa-pause"></i>
+                </button>
+            </div>
+
+            <!-- ACTION CONTROLS (ON-SCREEN BUTTONS) -->
+            <div class="absolute bottom-6 left-6 z-30 flex gap-3 pointer-events-auto">
+                <!-- Shoot Button -->
+                <div class="flex flex-col items-center">
+                    <div id="btn-shoot" class="control-btn w-16 h-16 bg-red-600/80 hover:bg-red-500 border-red-400">
+                        <span class="text-xs font-black" data-i18n="btnShoot">تسديد</span>
+                    </div>
+                </div>
+                <!-- Pass Button -->
+                <div class="flex flex-col items-center">
+                    <div id="btn-pass" class="control-btn w-16 h-16 bg-blue-600/80 hover:bg-blue-500 border-blue-400">
+                        <span class="text-xs font-black" data-i18n="btnPass">تمرير</span>
+                    </div>
+                </div>
+                <!-- Through Pass Button -->
+                <div class="flex flex-col items-center mb-4">
+                    <div id="btn-through" class="control-btn w-14 h-14 bg-yellow-600/80 hover:bg-yellow-500 border-yellow-400">
+                        <span class="text-xs font-black" data-i18n="btnThrough">بينية</span>
+                    </div>
+                </div>
+                <!-- Sprint Button -->
+                <div class="flex flex-col items-center">
+                    <div id="btn-sprint" class="control-btn w-16 h-16 bg-emerald-600/80 hover:bg-emerald-500 border-emerald-400">
+                        <span class="text-xs font-black" data-i18n="btnSprint">سرعة</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JOYSTICK CONTAINER (RIGHT SIDE FOR THUMB MOVEMENT) -->
+            <div id="joystick-container">
+                <div id="joystick-stick"></div>
+            </div>
+
+            <!-- POWER BAR OVERLAY -->
+            <div id="power-bar-wrapper" class="absolute bottom-28 left-1/2 transform -translate-x-1/2 w-48 h-3 bg-black/80 rounded-full border border-white/30 overflow-hidden hidden">
+                <div id="power-bar-fill" class="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-600 w-0 transition-all duration-75"></div>
+            </div>
+
+            <!-- GOAL CELEBRATION NOTIFICATION OVERLAY -->
+            <div id="goal-banner" class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+                <div class="text-center animate-bounce">
+                    <h1 class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-red-500 to-green-400 drop-shadow-lg" data-i18n="goalTitle">
+                        ووووو جوووووول!
+                    </h1>
+                    <p id="goal-scorer" class="text-2xl font-bold text-white mt-2" data-i18n="goalSubtitle">هدف عالمي بصوت المعلق!</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- MODAL: SQUAD / MANAGEMENT -->
+        <div id="modal-squad" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+            <div class="glass-panel w-full max-w-3xl rounded-2xl p-6 border border-white/20 flex flex-col max-h-[90vh]">
+                <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-3">
+                    <h3 class="text-xl font-black text-green-400"><i class="fa-solid fa-shirt me-2"></i><span data-i18n="squadTitle">تشكيلة النجوم</span></h3>
+                    <button onclick="closeModal('modal-squad')" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                
+                <div class="overflow-y-auto flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 p-2" id="squad-cards-container">
+                    <!-- Cards dynamically populated by JS -->
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-white/10 flex justify-end">
+                    <button onclick="closeModal('modal-squad')" class="bg-green-500 text-black font-extrabold px-6 py-2 rounded-xl" data-i18n="saveClose">حفظ وإغلاق</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: STATS & PROGRESS -->
+        <div id="modal-stats" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+            <div class="glass-panel w-full max-w-md rounded-2xl p-6 border border-white/20">
+                <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-3">
+                    <h3 class="text-xl font-black text-yellow-400"><i class="fa-solid fa-trophy me-2"></i><span data-i18n="statsTitle">إحصائيات وسجل المباريات</span></h3>
+                    <button onclick="closeModal('modal-stats')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between p-3 bg-white/5 rounded-xl">
+                        <span class="text-gray-300" data-i18n="matchesPlayed">المباريات الملعوبة:</span>
+                        <span id="stat-matches" class="font-bold text-white">0</span>
+                    </div>
+                    <div class="flex justify-between p-3 bg-white/5 rounded-xl">
+                        <span class="text-gray-300" data-i18n="victories">الانتصارات:</span>
+                        <span id="stat-wins" class="font-bold text-green-400">0</span>
+                    </div>
+                    <div class="flex justify-between p-3 bg-white/5 rounded-xl">
+                        <span class="text-gray-300" data-i18n="goalsScored">الأهداف المسجلة:</span>
+                        <span id="stat-goals" class="font-bold text-yellow-300">0</span>
+                    </div>
+                </div>
+
+                <button onclick="closeModal('modal-stats')" class="w-full mt-6 bg-blue-600 text-white font-bold py-2 rounded-xl" data-i18n="backBtn">رجوع</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPT SECTION: TRANSLATIONS & LOGIC -->
+    <script>
+        // MULTI-LANGUAGE TRANSLATION DICTIONARIES
+        const translations = {
+            ar: {
+                dir: 'rtl',
+                speechLang: 'ar-SA',
+                guestUser: 'جاري تسجيل الدخول الضيف...',
+                liveMatch: 'المباراة المباشرة',
+                quickMatchTitle: 'مباراة سريعة (سنتياغو برنابيو)',
+                quickMatchDesc: 'التقِ بأفضل الأندية والنجوم في تجربة كروية ثلاثية الأبعاد تعليق حي ومباشر.',
+                startMatchBtn: 'ابدأ المباراة الآن',
+                teamSquad: 'تشكيلة الفريق',
+                teamOvr: 'القوة الإجمالية للفريق',
+                topPlayers: 'نجوم الفريق الرئيسي',
+                manageSquad: 'إدارة التشكيلة',
+                navHome: 'الرئيسية',
+                navGamePlan: 'خطة اللعب',
+                navStats: 'الإحصائيات',
+                teamHome: 'إي اتش (AH)',
+                teamAway: 'المنافس',
+                welcomeComm: 'أهلاً بكم في تغطية المباراة المباشرة!',
+                matchStartComm: 'أهلاً بكم أعزائي المتابعين! انطلقت صافرة بداية المباراة الآن!',
+                pauseComm: 'تم إيقاف المباراة مؤقتاً.',
+                shootComm: 'تسديدة قوية ومباشرة نحو المرمى!',
+                passComm: 'تمريرة حاسمة ومتقنة في العمق.',
+                goalComm: 'يا إلهي! هدف خيالي رائع جداً! جوووووول!',
+                btnShoot: 'تسديد',
+                btnPass: 'تمرير',
+                btnThrough: 'بينية',
+                btnSprint: 'سرعة',
+                goalTitle: 'ووووو جوووووول!',
+                goalSubtitle: 'هدف عالمي بصوت المعلق!',
+                squadTitle: 'تشكيلة النجوم',
+                saveClose: 'حفظ وإغلاق',
+                statsTitle: 'إحصائيات وسجل المباريات',
+                matchesPlayed: 'المباريات الملعوبة:',
+                victories: 'الانتصارات:',
+                goalsScored: 'الأهداف المسجلة:',
+                backBtn: 'رجوع'
+            },
+            en: {
+                dir: 'ltr',
+                speechLang: 'en-US',
+                guestUser: 'Logging in guest account...',
+                liveMatch: 'LIVE MATCH',
+                quickMatchTitle: 'Quick Match (Santiago Bernabéu)',
+                quickMatchDesc: 'Face elite clubs & stars in full 3D gameplay with live dynamic commentary.',
+                startMatchBtn: 'Start Match Now',
+                teamSquad: 'My Team Squad',
+                teamOvr: 'Overall Team Strength',
+                topPlayers: 'Key Starting Players',
+                manageSquad: 'Manage Squad',
+                navHome: 'Home',
+                navGamePlan: 'Game Plan',
+                navStats: 'Statistics',
+                teamHome: 'AH Club',
+                teamAway: 'Rival FC',
+                welcomeComm: 'Welcome to today’s live match coverage!',
+                matchStartComm: 'Welcome everyone! The referee blows the whistle and we are underway!',
+                pauseComm: 'The match has been paused.',
+                shootComm: 'A powerful strike towards goal!',
+                passComm: 'A brilliant precise pass into space.',
+                goalComm: 'WHAT A GOAL! Absolutely stunning finish!',
+                btnShoot: 'SHOOT',
+                btnPass: 'PASS',
+                btnThrough: 'THROUGH',
+                btnSprint: 'SPRINT',
+                goalTitle: 'GOOOOOAL!',
+                goalSubtitle: 'Sensational finish from the star player!',
+                squadTitle: 'Star Squad Roster',
+                saveClose: 'Save & Close',
+                statsTitle: 'Match History & Stats',
+                matchesPlayed: 'Matches Played:',
+                victories: 'Victories:',
+                goalsScored: 'Goals Scored:',
+                backBtn: 'Back'
+            },
+            es: {
+                dir: 'ltr',
+                speechLang: 'es-ES',
+                guestUser: 'Iniciando sesión de invitado...',
+                liveMatch: 'PARTIDO EN VIVO',
+                quickMatchTitle: 'Partido Rápido (Santiago Bernabéu)',
+                quickMatchDesc: 'Enfréntate a grandes clubes y estrellas en 3D con comentarios en directo.',
+                startMatchBtn: 'Jugar Partido Ahora',
+                teamSquad: 'Mi Plantilla',
+                teamOvr: 'Fuerza Colectiva',
+                topPlayers: 'Jugadores Clave',
+                manageSquad: 'Gestionar Equipo',
+                navHome: 'Inicio',
+                navGamePlan: 'Estrategia',
+                navStats: 'Estadísticas',
+                teamHome: 'AH Fútbol',
+                teamAway: 'Rival FC',
+                welcomeComm: '¡Bienvenidos a la retransmisión en directo del partido!',
+                matchStartComm: '¡Bienvenidos todos! El árbitro pita el inicio del partido.',
+                pauseComm: 'Partido pausado.',
+                shootComm: '¡Potente disparo directamente a puerta!',
+                passComm: '¡Gran pase al hueco con precisión!',
+                goalComm: '¡GOOOOOOLAZO! ¡Qué golazo Espectacular!',
+                btnShoot: 'TIRAR',
+                btnPass: 'PASE',
+                btnThrough: 'AL HUECO',
+                btnSprint: 'CORRER',
+                goalTitle: '¡GOOOOOOL!',
+                goalSubtitle: '¡Definición magistral en el marcador!',
+                squadTitle: 'Plantilla de Estrellas',
+                saveClose: 'Guardar y Cerrar',
+                statsTitle: 'Historial y Estadísticas',
+                matchesPlayed: 'Partidos Jugados:',
+                victories: 'Victorias:',
+                goalsScored: 'Goles Marcados:',
+                backBtn: 'Volver'
+            },
+            fr: {
+                dir: 'ltr',
+                speechLang: 'fr-FR',
+                guestUser: 'Connexion invité en cours...',
+                liveMatch: 'MATCH EN DIRECT',
+                quickMatchTitle: 'Match Rapide (Santiago Bernabéu)',
+                quickMatchDesc: 'Affrontez des clubs d\'élite et des stars en 3D avec commentaires en direct.',
+                startMatchBtn: 'Jouer le Match',
+                teamSquad: 'Mon Équipe',
+                teamOvr: 'Force Globale',
+                topPlayers: 'Joueurs Vedettes',
+                manageSquad: 'Gérer l\'Équipe',
+                navHome: 'Accueil',
+                navGamePlan: 'Plan de Jeu',
+                navStats: 'Statistiques',
+                teamHome: 'AH Club',
+                teamAway: 'Adversaire',
+                welcomeComm: 'Bienvenue pour la couverture en direct du match !',
+                matchStartComm: 'Bienvenue à tous ! Coup d\'envoi donné par l\'arbitre !',
+                pauseComm: 'Match en pause.',
+                shootComm: 'Une frappe puissante vers le but !',
+                passComm: 'Superbe passe dans la course !',
+                goalComm: 'BUT MAGNIFIQUE ! Quel geste incroyable !',
+                btnShoot: 'TIR',
+                btnPass: 'PASSE',
+                btnThrough: 'EN PROF',
+                btnSprint: 'SPRINT',
+                goalTitle: 'BUUUUUT !',
+                goalSubtitle: 'Une finition exceptionnelle du joueur !',
+                squadTitle: 'Effectif des Stars',
+                saveClose: 'Sauvegarder',
+                statsTitle: 'Historique et Stats',
+                matchesPlayed: 'Matches Joués:',
+                victories: 'Victoires:',
+                goalsScored: 'Buts Marqués:',
+                backBtn: 'Retour'
+            },
+            de: {
+                dir: 'ltr',
+                speechLang: 'de-DE',
+                guestUser: 'Gastanmeldung läuft...',
+                liveMatch: 'LIVE SPIEL',
+                quickMatchTitle: 'Schnelles Spiel (Santiago Bernabéu)',
+                quickMatchDesc: 'Tritt gegen Top-Klubs in 3D mit Live-Kommentar an.',
+                startMatchBtn: 'Jetzt Spielen',
+                teamSquad: 'Meine Mannschaft',
+                teamOvr: 'Gesamtstärke',
+                topPlayers: 'Schlüsselspieler',
+                manageSquad: 'Kader Verwalten',
+                navHome: 'Hauptmenü',
+                navGamePlan: 'Taktik',
+                navStats: 'Statistiken',
+                teamHome: 'AH Club',
+                teamAway: 'Gegner FC',
+                welcomeComm: 'Willkommen zur heutigen Live-Übertragung!',
+                matchStartComm: 'Willkommen zusammen! Anpfiff der Partie!',
+                pauseComm: 'Das Spiel ist pausiert.',
+                shootComm: 'Ein gewaltiger Schuss aufs Tor!',
+                passComm: 'Präziser Pass in den Lauf!',
+                goalComm: 'TOR! Was für ein fantastischer Treffer!',
+                btnShoot: 'SCHUSS',
+                btnPass: 'PASS',
+                btnThrough: 'STEILPASS',
+                btnSprint: 'SPRINT',
+                goalTitle: 'TOOOOOOR!',
+                goalSubtitle: 'Erstklassiger Abschluss!',
+                squadTitle: 'Kader der Stars',
+                saveClose: 'Speichern',
+                statsTitle: 'Spielstatistik',
+                matchesPlayed: 'Gespielte Spiele:',
+                victories: 'Siege:',
+                goalsScored: 'Erzielte Tore:',
+                backBtn: 'Zurück'
+            },
+            it: {
+                dir: 'ltr',
+                speechLang: 'it-IT',
+                guestUser: 'Accesso ospite in corso...',
+                liveMatch: 'PARTITA LIVE',
+                quickMatchTitle: 'Partita Rapida (Santiago Bernabéu)',
+                quickMatchDesc: 'Sfida i grandi club in 3D con telecronaca dal vivo.',
+                startMatchBtn: 'Gioca Ora',
+                teamSquad: 'La Mia Squadra',
+                teamOvr: 'Valutazione Globale',
+                topPlayers: 'Giocatori Chiave',
+                manageSquad: 'Gestisci Rosa',
+                navHome: 'Home',
+                navGamePlan: 'Schema',
+                navStats: 'Statistiche',
+                teamHome: 'AH Club',
+                teamAway: 'Avversario',
+                welcomeComm: 'Benvenuti alla diretta della partita!',
+                matchStartComm: 'Benvenuti a tutti! Calcio d\'inizio!',
+                pauseComm: 'Partita in pausa.',
+                shootComm: 'Un gran tiro verso la porta!',
+                passComm: 'Passaggio preciso nello spazio!',
+                goalComm: 'GOL STRAORDINARIO! Esecuzione perfetta!',
+                btnShoot: 'TIRO',
+                btnPass: 'PASSAGGIO',
+                btnThrough: 'FILTRANTE',
+                btnSprint: 'SCATTO',
+                goalTitle: 'GOOOOOOL!',
+                goalSubtitle: 'Azione spettacolare conclusa in rete!',
+                squadTitle: 'Rosa delle Stelle',
+                saveClose: 'Salva e Chiudi',
+                statsTitle: 'Statistiche e Storico',
+                matchesPlayed: 'Partite Giocate:',
+                victories: 'Vittorie:',
+                goalsScored: 'Gol Fatti:',
+                backBtn: 'Indietro'
+            },
+            pt: {
+                dir: 'ltr',
+                speechLang: 'pt-PT',
+                guestUser: 'Entrando como convidado...',
+                liveMatch: 'JOGO AO VIVO',
+                quickMatchTitle: 'Jogo Rápido (Santiago Bernabéu)',
+                quickMatchDesc: 'Enfrente grandes clubes em 3D com narração ao vivo.',
+                startMatchBtn: 'Iniciar Jogo',
+                teamSquad: 'Minha Equipe',
+                teamOvr: 'Força Geral',
+                topPlayers: 'Principais Jogadores',
+                manageSquad: 'Gerenciar Elenco',
+                navHome: 'Início',
+                navGamePlan: 'Plano de Jogo',
+                navStats: 'Estatísticas',
+                teamHome: 'AH Futebol',
+                teamAway: 'Adversário',
+                welcomeComm: 'Bem-vindos à transmissão ao vivo!',
+                matchStartComm: 'Bem-vindos todos! O árbitro apita o início do jogo!',
+                pauseComm: 'Jogo pausado.',
+                shootComm: 'Remate forte direto à baliza!',
+                passComm: 'Passe preciso em profundidade!',
+                goalComm: 'GOLAÇO! Uma finalização fantástica!',
+                btnShoot: 'CHUTE',
+                btnPass: 'PASSE',
+                btnThrough: 'DESMARQUE',
+                btnSprint: 'CORRER',
+                goalTitle: 'GOOOOOOLO!',
+                goalSubtitle: 'Finalização brilhante no jogo!',
+                squadTitle: 'Elenco Principal',
+                saveClose: 'Salvar e Fechar',
+                statsTitle: 'Histórico e Estatísticas',
+                matchesPlayed: 'Jogos Realizados:',
+                victories: 'Vitórias:',
+                goalsScored: 'Gols Marcados:',
+                backBtn: 'Voltar'
+            },
+            tr: {
+                dir: 'ltr',
+                speechLang: 'tr-TR',
+                guestUser: 'Misafir girişi yapılıyor...',
+                liveMatch: 'CANLI MAÇ',
+                quickMatchTitle: 'Hızlı Maç (Santiago Bernabéu)',
+                quickMatchDesc: '3D grafikler ve canlı spiker anlatımıyla dev kulüplerle karşılaşın.',
+                startMatchBtn: 'Maça Başla',
+                teamSquad: 'Takımım',
+                teamOvr: 'Genel Güç',
+                topPlayers: 'Yıldız Oyuncular',
+                manageSquad: 'Kadro Yönetimi',
+                navHome: 'Ana Sayfa',
+                navGamePlan: 'Oyun Planı',
+                navStats: 'İstatistikler',
+                teamHome: 'AH Kulübü',
+                teamAway: 'Rakip FC',
+                welcomeComm: 'Canlı maç anlatımına hoş geldiniz!',
+                matchStartComm: 'Herkese merhaba! Hakem düdüğünü çaldı ve maç başladı!',
+                pauseComm: 'Maç durduruldu.',
+                shootComm: 'Kaleye doğru sert bir şut!',
+                passComm: 'Harika bir pas organizasyonu!',
+                goalComm: 'GOOOOOOL! İnanılmaz bir gol!',
+                btnShoot: 'ŞUT',
+                btnPass: 'PAS',
+                btnThrough: 'ARAPASI',
+                btnSprint: 'DEPAR',
+                goalTitle: 'GOOOOOOL!',
+                goalSubtitle: 'Harika bir vuruş ve top ağlarda!',
+                squadTitle: 'Yıldız Kadro',
+                saveClose: 'Kaydet ve Kapat',
+                statsTitle: 'İstatistikler ve Geçmiş',
+                matchesPlayed: 'Oynanan Maç:',
+                victories: 'Galibiyet:',
+                goalsScored: 'Atılan Gol:',
+                backBtn: 'Geri'
+            }
+        };
+
+        // Current Active Language state
+        window.currentLang = 'ar';
+
+        // Switch Language function
+        function changeLanguage(langCode) {
+            if (!translations[langCode]) return;
+            window.currentLang = langCode;
+            const dict = translations[langCode];
+
+            // Set HTML Direction
+            document.documentElement.dir = dict.dir;
+            document.documentElement.lang = langCode;
+
+            // Update All Data-i18n Elements
+            document.querySelectorAll('[data-i18n]').forEach(elem => {
+                const key = elem.getAttribute('data-i18n');
+                if (dict[key]) {
+                    elem.innerText = dict[key];
+                }
+            });
+
+            // Update Select Dropdown Value
+            const langSelect = document.getElementById('lang-select');
+            if (langSelect) langSelect.value = langCode;
+
+            // Save Preference locally
+            try {
+                localStorage.setItem('ah_football_lang', langCode);
+            } catch(e){}
+
+            // Update speech commentary tone
+            speakCommentary(dict.welcomeComm);
+        }
+
+        // Modified speech commentary to respect active language voice
+        function speakCommentary(textKeyOrText) {
+            const dict = translations[window.currentLang] || translations.ar;
+            let text = dict[textKeyOrText] || textKeyOrText;
+
+            const banner = document.getElementById('commentary-banner');
+            const textElem = document.getElementById('commentary-text');
+            if (banner && textElem) {
+                textElem.innerText = text;
+                banner.classList.remove('hidden');
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const msg = new SpeechSynthesisUtterance(text);
+                msg.lang = dict.speechLang || 'ar-SA';
+                msg.rate = 1.1;
+                msg.pitch = 1.05;
+                window.speechSynthesis.speak(msg);
+            }
+        }
+
+        // Updated triggers with commentary translations
+        function startGameMatch() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+
+            if (!scene) {
+                init3D();
+                setupControls();
+                animate();
+            }
+
+            window.gameState.isMatchPlaying = true;
+            window.gameState.scoreHome = 0;
+            window.gameState.scoreAway = 0;
+            window.gameState.timeElapsed = 0;
+            document.getElementById('score-text').innerText = "0 - 0";
+            
+            if (window.gameState.timerInterval) clearInterval(window.gameState.timerInterval);
+            window.gameState.timerInterval = setInterval(() => {
+                if (window.gameState.isMatchPlaying) {
+                    window.gameState.timeElapsed++;
+                    const mins = String(Math.floor(window.gameState.timeElapsed / 60)).padStart(2, '0');
+                    const secs = String(window.gameState.timeElapsed % 60).padStart(2, '0');
+                    document.getElementById('match-time').innerText = `${mins}:${secs}`;
+                }
+            }, 1000);
+
+            speakCommentary('matchStartComm');
+        }
+
+        function pauseGame() {
+            window.gameState.isMatchPlaying = false;
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+            speakCommentary('pauseComm');
+        }
+
+        function triggerAction(type) {
+            clearInterval(powerInterval);
+            document.getElementById('power-bar-wrapper').classList.add('hidden');
+
+            if (type === 'shoot') {
+                const force = (powerVal > 0 ? powerVal : 40) * 0.02;
+                ballVelocity.set(0, 0.3, -force);
+                speakCommentary('shootComm');
+            } else if (type === 'pass') {
+                ballVelocity.set(0, 0.1, -0.6);
+                speakCommentary('passComm');
+            }
+            powerVal = 0;
+        }
+
+        function triggerGoal() {
+            window.gameState.scoreHome++;
+            window.gameState.stats.goals++;
+            document.getElementById('score-text').innerText = `${window.gameState.scoreHome} - ${window.gameState.scoreAway}`;
+            
+            const goalBanner = document.getElementById('goal-banner');
+            goalBanner.classList.remove('hidden');
+            speakCommentary('goalComm');
+
+            setTimeout(() => {
+                goalBanner.classList.add('hidden');
+                player1.position.set(0, 1.5, 5);
+                ball.position.set(0, 0.8, 0);
+                ballVelocity.set(0, 0, 0);
+            }, 2500);
+
+            if (window.saveGameProgress) {
+                window.saveGameProgress(window.gameState.stats);
+            }
+        }
+
+        // On Load initialization
+        window.onload = function() {
+            updateUIBalances();
+            const savedLang = localStorage.getItem('ah_football_lang') || 'ar';
+            changeLanguage(savedLang);
+        };
+    </script>
+
+    <!-- 3D ENGINE & GAMEPLAY LOGIC (Three.js Implementation) -->
+    <script>
+        // Global Game State
+        window.gameState = {
+            isMatchPlaying: false,
+            scoreHome: 0,
+            scoreAway: 0,
+            timeElapsed: 0,
+            timerInterval: null,
+            stats: { matches: 0, wins: 0, goals: 0 },
+            coins: 250,
+            gp: 50000
+        };
+
+        // Three.js Core Variables
+        let scene, camera, renderer;
+        let pitch, ball, player1, player1Marker, aiPlayer, homeGoal, awayGoal;
+        let ballVelocity = new THREE.Vector3(0, 0, 0);
+        let playerVelocity = new THREE.Vector3(0, 0, 0);
+        let aiVelocity = new THREE.Vector3(0, 0, 0);
+        let joystickVector = { x: 0, y: 0 };
+        let powerVal = 0;
+        let powerInterval = null;
+        let isPowerCharging = false;
+        let keysPressed = {};
+
+        // Squad Roster Data
+        const squadData = [
+            { name: 'Erling Haaland', pos: 'CF', rating: 99, type: 'Epic', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80' },
+            { name: 'Kylian Mbappé', pos: 'LWF', rating: 98, type: 'Epic', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80' },
+            { name: 'Lamine Yamal', pos: 'RWF', rating: 96, type: 'Highlight', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80' },
+            { name: 'Jude Bellingham', pos: 'AMF', rating: 97, type: 'Epic', img: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=300&q=80' },
+            { name: 'Rodri', pos: 'DMF', rating: 95, type: 'Standard', img: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=300&q=80' },
+            { name: 'Virgil van Dijk', pos: 'CB', rating: 96, type: 'Highlight', img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80' },
+            { name: 'Achraf Hakimi', pos: 'RB', rating: 93, type: 'Standard', img: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80' },
+            { name: 'Thibaut Courtois', pos: 'GK', rating: 95, type: 'Highlight', img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80' }
+        ];
+
+        function updateUIBalances() {
+            document.getElementById('gp-balance').innerText = window.gameState.gp.toLocaleString();
+            document.getElementById('coin-balance').innerText = window.gameState.coins.toLocaleString();
+            document.getElementById('stat-matches').innerText = window.gameState.stats.matches;
+            document.getElementById('stat-wins').innerText = window.gameState.stats.wins;
+            document.getElementById('stat-goals').innerText = window.gameState.stats.goals;
+        }
+
+        function openSquadModal() {
+            const container = document.getElementById('squad-cards-container');
+            container.innerHTML = '';
+            squadData.forEach(p => {
+                const card = document.createElement('div');
+                const isEpic = p.type === 'Epic';
+                card.className = `p-3 rounded-xl flex flex-col items-center justify-between text-center relative overflow-hidden ${isEpic ? 'ef-card-epic' : 'ef-card'}`;
+                card.innerHTML = `
+                    <div class="w-full flex justify-between items-center text-xs font-black">
+                        <span class="bg-black/60 px-2 py-0.5 rounded text-green-300">${p.pos}</span>
+                        <span class="text-xl text-yellow-300 font-extrabold">${p.rating}</span>
+                    </div>
+                    <div class="w-16 h-16 rounded-full border-2 border-white/50 overflow-hidden my-2 shadow-lg">
+                        <img src="${p.img}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="text-xs font-bold text-white truncate w-full">${p.name}</div>
+                    <span class="text-[9px] uppercase tracking-wider text-gray-200 mt-1">${p.type}</span>
+                `;
+                container.appendChild(card);
+            });
+            document.getElementById('modal-squad').classList.remove('hidden');
+        }
+
+        function openStatsModal() {
+            updateUIBalances();
+            document.getElementById('modal-stats').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Initialize 3D Graphics World (Three.js)
+        function init3D() {
+            const canvas = document.getElementById('game-canvas');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0f1d);
+            scene.fog = new THREE.FogExp2(0x0a0f1d, 0.015);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const stadiumLight1 = new THREE.SpotLight(0xffffff, 1.2);
+            stadiumLight1.position.set(-30, 40, 20);
+            stadiumLight1.castShadow = true;
+            scene.add(stadiumLight1);
+
+            const stadiumLight2 = new THREE.SpotLight(0xffffff, 1.2);
+            stadiumLight2.position.set(30, 40, -20);
+            stadiumLight2.castShadow = true;
+            scene.add(stadiumLight2);
+
+            // Pitch Surface (Bernabéu Turf Style)
+            const pitchGeo = new THREE.PlaneGeometry(50, 80);
+            const pitchMat = new THREE.MeshStandardMaterial({ color: 0x1e8238, roughness: 0.6 });
+            pitch = new THREE.Mesh(pitchGeo, pitchMat);
+            pitch.rotation.x = -Math.PI / 2;
+            pitch.receiveShadow = true;
+            scene.add(pitch);
+
+            // Pitch Line Markings
+            const linesGeo = new THREE.PlaneGeometry(48, 78);
+            const linesMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+            const lines = new THREE.Mesh(linesGeo, linesMat);
+            lines.rotation.x = -Math.PI / 2;
+            lines.position.y = 0.01;
+            scene.add(lines);
+
+            // Ball Creation
+            const ballGeo = new THREE.SphereGeometry(0.5, 32, 32);
+            const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            ball = new THREE.Mesh(ballGeo, ballMat);
+            ball.position.set(0, 0.5, 0);
+            ball.castShadow = true;
+            scene.add(ball);
+
+            // Player 1 (Home Team - Blue)
+            player1 = createPlayerMesh(0x0055ff);
+            player1.position.set(0, 1, 5);
+            scene.add(player1);
+
+            // Player Selection Ring Indicator
+            const markerGeo = new THREE.RingGeometry(0.8, 1.0, 32);
+            const markerMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, side: THREE.DoubleSide });
+            player1Marker = new THREE.Mesh(markerGeo, markerMat);
+            player1Marker.rotation.x = -Math.PI / 2;
+            player1Marker.position.y = 0.02;
+            scene.add(player1Marker);
+
+            // AI Player (Away Team - Red)
+            aiPlayer = createPlayerMesh(0xee2222);
+            aiPlayer.position.set(0, 1, -15);
+            scene.add(aiPlayer);
+
+            // Goals
+            homeGoal = createGoalMesh();
+            homeGoal.position.set(0, 0, 38);
+            scene.add(homeGoal);
+
+            awayGoal = createGoalMesh();
+            awayGoal.position.set(0, 0, -38);
+            awayGoal.rotation.y = Math.PI;
+            scene.add(awayGoal);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function createPlayerMesh(colorHex) {
+            const group = new THREE.Group();
+            // Body / Jersey
+            const bodyGeo = new THREE.CylinderGeometry(0.5, 0.4, 1.4, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.7;
+            body.castShadow = true;
+            group.add(body);
+
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.7;
+            head.castShadow = true;
+            group.add(head);
+
+            return group;
+        }
+
+        function createGoalMesh() {
+            const goalGroup = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            
+            const post1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3), mat);
+            post1.position.set(-4, 1.5, 0);
+            const post2 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3), mat);
+            post2.position.set(4, 1.5, 0);
+            
+            const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 8.2), mat);
+            crossbar.rotation.z = Math.PI / 2;
+            crossbar.position.set(0, 3, 0);
+
+            goalGroup.add(post1);
+            goalGroup.add(post2);
+            goalGroup.add(crossbar);
+            return goalGroup;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Setup On-Screen Controls & Joystick
+        function setupControls() {
+            const stick = document.getElementById('joystick-stick');
+            const container = document.getElementById('joystick-container');
+
+            let activeTouch = false;
+            let center = { x: 0, y: 0 };
+
+            function handleStart(e) {
+                activeTouch = true;
+                const rect = container.getBoundingClientRect();
+                center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            }
+
+            function handleMove(e) {
+                if (!activeTouch) return;
+                const touch = e.touches ? e.touches[0] : e;
+                const dx = touch.clientX - center.x;
+                const dy = touch.clientY - center.y;
+                const dist = Math.min(Math.sqrt(dx * dx + dy * dy), 40);
+                const angle = Math.atan2(dy, dx);
+
+                const stickX = Math.cos(angle) * dist;
+                const stickY = Math.sin(angle) * dist;
+
+                stick.style.transform = `translate(${stickX}px, ${stickY}px)`;
+                joystickVector.x = stickX / 40;
+                joystickVector.y = stickY / 40;
+            }
+
+            function handleEnd() {
+                activeTouch = false;
+                stick.style.transform = `translate(0px, 0px)`;
+                joystickVector = { x: 0, y: 0 };
+            }
+
+            container.addEventListener('touchstart', handleStart, { passive: true });
+            window.addEventListener('touchmove', handleMove, { passive: true });
+            window.addEventListener('touchend', handleEnd, { passive: true });
+
+            container.addEventListener('mousedown', handleStart);
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+
+            // Keyboard Controls Support (WASD / Arrows)
+            window.addEventListener('keydown', e => {
+                keysPressed[e.key.toLowerCase()] = true;
+            });
+            window.addEventListener('keyup', e => {
+                keysPressed[e.key.toLowerCase()] = false;
+            });
+
+            // Action Buttons Setup (Shoot / Pass)
+            const btnShoot = document.getElementById('btn-shoot');
+            const btnPass = document.getElementById('btn-pass');
+
+            btnShoot.addEventListener('mousedown', startPowerGauge);
+            btnShoot.addEventListener('mouseup', () => triggerAction('shoot'));
+            btnShoot.addEventListener('touchstart', startPowerGauge, { passive: true });
+            btnShoot.addEventListener('touchend', () => triggerAction('shoot'));
+
+            btnPass.addEventListener('click', () => triggerAction('pass'));
+        }
+
+        function startPowerGauge() {
+            powerVal = 0;
+            isPowerCharging = true;
+            const barWrapper = document.getElementById('power-bar-wrapper');
+            const barFill = document.getElementById('power-bar-fill');
+            barWrapper.classList.remove('hidden');
+
+            powerInterval = setInterval(() => {
+                if (isPowerCharging) {
+                    powerVal += 5;
+                    if (powerVal > 100) powerVal = 100;
+                    barFill.style.width = powerVal + '%';
+                }
+            }, 30);
+        }
+
+        // Animation and Physics Update Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (window.gameState.isMatchPlaying) {
+                // Keyboard Joystick Bridge
+                let kX = 0, kY = 0;
+                if (keysPressed['w'] || keysPressed['arrowup']) kY = -1;
+                if (keysPressed['s'] || keysPressed['arrowdown']) kY = 1;
+                if (keysPressed['a'] || keysPressed['arrowleft']) kX = -1;
+                if (keysPressed['d'] || keysPressed['arrowright']) kX = 1;
+
+                const moveX = joystickVector.x || kX;
+                const moveZ = joystickVector.y || kY;
+
+                // Move Player 1
+                const speed = 0.25;
+                player1.position.x += moveX * speed;
+                player1.position.z += moveZ * speed;
+
+                // Keep Player 1 in Boundaries
+                player1.position.x = Math.max(-23, Math.min(23, player1.position.x));
+                player1.position.z = Math.max(-38, Math.min(38, player1.position.z));
+
+                player1Marker.position.x = player1.position.x;
+                player1Marker.position.z = player1.position.z;
+
+                // AI Opponent Logic (Chases ball)
+                const aiSpeed = 0.12;
+                if (ball.position.z < 10) {
+                    if (aiPlayer.position.x < ball.position.x) aiPlayer.position.x += aiSpeed;
+                    if (aiPlayer.position.x > ball.position.x) aiPlayer.position.x -= aiSpeed;
+                    if (aiPlayer.position.z < ball.position.z) aiPlayer.position.z += aiSpeed;
+                    if (aiPlayer.position.z > ball.position.z) aiPlayer.position.z -= aiSpeed;
+                }
+
+                // Ball Dribble Collision with Player
+                const distToBall = player1.position.distanceTo(ball.position);
+                if (distToBall < 1.2 && ballVelocity.length() < 0.1) {
+                    ball.position.x = player1.position.x + Math.sin(player1.rotation.y) * 0.8;
+                    ball.position.z = player1.position.z - Math.cos(player1.rotation.y) * 0.8;
+                }
+
+                // Ball Movement Physics
+                ball.position.add(ballVelocity);
+                ballVelocity.multiplyScalar(0.95); // Friction damping
+
+                // Goal Collision Checking
+                if (ball.position.z < -37 && Math.abs(ball.position.x) < 4) {
+                    triggerGoal();
+                }
+
+                // Dynamic Camera Following Action
+                camera.position.x = player1.position.x * 0.4;
+                camera.position.z = player1.position.z + 18;
+                camera.position.y = 12;
+                camera.lookAt(ball.position);
+            }
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
